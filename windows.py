@@ -109,14 +109,14 @@ def generate_thumbnail(video_file, output_file, timestamp="00:00",part_number=1,
             'crop=480:640:(in_w-480)/2:(in_h-640)/2,'  # Crop to 4:3 portrait
             'drawtext=text=\'{}\':'
             f'fontfile={FONT_FILE}:'
-            'fontcolor=black:fontsize=40:'
-            'borderw=1:bordercolor=white:'
-            'x=(w-text_w)/2:y=20,'
+            'fontcolor=white:fontsize=40:'
+            'borderw=2:bordercolor=black:'
+            'x=(w-text_w)/2:y=50,'
             'drawtext=text=\'Part {}\':'
             f'fontfile={FONT_FILE}:'
             'fontcolor=white:fontsize=80:'
             'borderw=3:bordercolor=black:'
-            'x=(w-text_w)/2:y=h-100'.format(wrapped_title, part_number)
+            'x=(w-text_w)/2:y=h-200'.format(wrapped_title, part_number)
         ),
         '-q:v', '2',  # Set high-quality output
         os.path.join(output_file, f'part_{part_number}.jpg')
@@ -135,7 +135,7 @@ def add_captions_to_video(input_file, output_file, total_clips, part_number=1, t
         f'fontfile={FONT_FILE}:'
         'fontcolor=white:fontsize=56:'
         'borderw=2:bordercolor=black:'
-        'x=(w-text_w)/2:y=500'
+        'x=(w-text_w)/2:y=400'
     )
     # Add part number only if there's more than one clip
     if total_clips > 1:

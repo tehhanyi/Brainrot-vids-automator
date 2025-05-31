@@ -7,7 +7,8 @@ import shutil
 
 FONT_FILE = './MinecraftBold.otf'
 SOURCE_FILE = 'vids/source_video.mp4'
-TEMP_CLIPS = 'vids/temp_clips'
+TEMP_FOLDER = 'vids/temp_clips'
+PREVIEW_FILE = 'vids/preview'
 THUMBNAIL_FOLDER = 'vids/thumbnails'
 CLIPS_FOLDER = 'vids/tiktok_clips'
 
@@ -99,6 +100,7 @@ def wrap_title(title,max_line=4, max_line_length=15):
 
     return '\n'.join(lines[:max_line])
 def generate_thumbnail(video_file, output_file, timestamp="00:00",part_number=1,title=""):
+    os.makedirs(output_file, exist_ok=True)
     wrapped_title = wrap_title(title, max_line=4, max_line_length=15)
     subprocess.run([
         ffmpeg_path, '-ss', timestamp, '-i', video_file,  # Seek to the timestamp
@@ -117,45 +119,71 @@ def generate_thumbnail(video_file, output_file, timestamp="00:00",part_number=1,
             'x=(w-text_w)/2:y=h-100'.format(wrapped_title, part_number)
         ),
         '-q:v', '2',  # Set high-quality output
-        output_file
+        os.path.join(output_file, f'part_{part_number}.jpg')
     ], check=True)
-def add_captions_to_video(input_file, output_file, title, part_number):
+def add_captions_to_video(input_file, output_file, total_clips, part_number=1, title=""):
+    os.makedirs(output_file, exist_ok=True)
     wrapped_title = wrap_title(title, max_line=3, max_line_length=30)
-    output_file = os.path.join(output_file, f'part_{part_number}.mp4')
-    subprocess.run([
-        ffmpeg_path, '-i', input_file,  # Input video
-        '-vf', (
-            # Split into two streams
-            'split[original][blur];'
-            # Create blurred background - scale to fill 9:16
-            '[blur]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:20[bg];'
-            # Scale original to fit in center while maintaining aspect ratio
-            '[original]scale=1080:-2[fg];'
-            # Overlay original in center
-            '[bg][fg]overlay=(W-w)/2:(H-h)/2:format=auto,'
-            # Add title in top blurred area
-            'drawtext=text=\'{}\':'
-            f'fontfile={FONT_FILE}:'
-            'fontcolor=white:fontsize=56:'
-            'borderw=2:bordercolor=black:'
-            'x=(w-text_w)/2:y=500,'
-            # 'x=(w-text_w)/2:y=(h-ih)/4,'  # Position in top blurred area
-            # Add part number in bottom blurred area
-            'drawtext=text=\'Part {}\':'
+    
+    # Base filter chain
+    filter_chain = (
+        'split[original][blur];'
+        '[blur]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:20[bg];'
+        '[original]scale=1080:-2[fg];'
+        '[bg][fg]overlay=(W-w)/2:(H-h)/2:format=auto,'
+        f'drawtext=text=\'{wrapped_title}\':'
+        f'fontfile={FONT_FILE}:'
+        'fontcolor=white:fontsize=56:'
+        'borderw=2:bordercolor=black:'
+        'x=(w-text_w)/2:y=500'
+    )
+    # Add part number only if there's more than one clip
+    if total_clips > 1:
+        filter_chain += (
+            ',drawtext=text=\'Part {}\':'
             f'fontfile={FONT_FILE}:'
             'fontcolor=white:fontsize=72:'
             'borderw=3:bordercolor=black:'
-            # 'x=(w-text_w)/2:y=h-(h-ih)/4'
             'x=(w-text_w)/2:y=h-400'
-            .format(wrapped_title, part_number)  # Position in bottom blurred area
-        ),
+            .format(part_number)
+        )
+    subprocess.run([
+        ffmpeg_path, '-i', input_file,
+        '-vf', filter_chain,
         '-c:a', 'copy',
         '-c:v', 'libx264',
         '-preset', 'medium',
         '-y',
-        output_file
+        os.path.join(output_file, f'part_{part_number}.mp4')
+    ], check=True)
+def create_preview():
+    temp_preview = 'vids/0.mp4'   
+    subprocess.run([
+        'ffmpeg', '-i', 'vids/temp_clips/clip_000.mp4',  # Use the first clip for preview
+        '-t', '1',  # Only take first second
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',  # Fast encoding for preview
+        '-y',
+        temp_preview
     ], check=True)
 
+    add_captions_to_video(temp_preview, PREVIEW_FILE, total_clips=1, title="Preview")
+    print(f"\nPreview generated at: {PREVIEW_FILE}")
+    os.remove(temp_preview)
+    
+    while True:
+        response = input("\nDo you want to continue processing? (y/n): ").lower()
+        if response in ['y', 'n']:
+            break
+        print("Please en-+ter 'y' for yes or 'n' for no.")
+    
+    if response == 'n':
+        print("Processing cancelled.")
+        sys.exit(0)
+    
+    shutil.rmtree(PREVIEW_FILE)
+    print("\nContinuing with full video processing...")
+    
 if __name__ == '__main__':
     # youtube_url = input("Enter the YouTube URL: ")
     # title = input("Enter the title for the thumbnails: ")
@@ -166,24 +194,25 @@ if __name__ == '__main__':
     duration = int(lines[2].strip())
 
     download_video(youtube_url, SOURCE_FILE)
-    split_video(SOURCE_FILE, TEMP_CLIPS, segment_duration=duration)
+    split_video(SOURCE_FILE, TEMP_FOLDER, segment_duration=duration)
         
-    print("\nAll clips are splited in the", TEMP_CLIPS, "folder.")
+    print("\nAll clips are splited in the", TEMP_FOLDER, "folder.")
     print("\nAdding captions and generating thumbnails next...\n")
+    create_preview()
 
-    clip_files = sorted([f for f in os.listdir(TEMP_CLIPS) if f.endswith('.mp4')])
+    clip_files = sorted([f for f in os.listdir(TEMP_FOLDER) if f.endswith('.mp4')])
     total_clips = len(clip_files)
+
     # Generate captions and thumbnails for each clip
     for i, clip_file in enumerate(clip_files, start=1):
-        clip_path = os.path.join(TEMP_CLIPS, clip_file)
-        thumbnail_path = os.path.join(THUMBNAIL_FOLDER, f'part_{i}.jpg')
-        generate_thumbnail(clip_path, thumbnail_path, part_number=i, title=title)
-        add_captions_to_video(clip_path, CLIPS_FOLDER, title, i)
+        clip_path = os.path.join(TEMP_FOLDER, clip_file)
+        generate_thumbnail(clip_path, THUMBNAIL_FOLDER, part_number=i, title=title)
+        add_captions_to_video(clip_path, CLIPS_FOLDER, total_clips, part_number=i, title=title)
 
     print("\nAll clips are ready to be posted for brainrot!\n")
 
-    response = input("Do you want to delete the clips? (y/n): ").lower()
-    if response == 'y':
-        shutil.rmtree(TEMP_CLIPS)
-    else
-        print("Temporary clips are kept in:", TEMP_CLIPS)
+    # response = input("Do you want to delete the clips? (y/n): ").lower()
+    # if response == 'y':
+    shutil.rmtree(TEMP_FOLDER)
+    # else:
+    #     print("Temporary clips are kept in:", TEMP_FOLDER)

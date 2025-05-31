@@ -167,7 +167,7 @@ def create_preview():
         temp_preview
     ], check=True)
 
-    add_captions_to_video(temp_preview, PREVIEW_FILE, total_clips=1, title="Preview")
+    add_captions_to_video(temp_preview, PREVIEW_FILE, total_clips=2, title="Preview Title Preview Title Preview Title", part_number=1)
     print(f"\nPreview generated at: {PREVIEW_FILE}")
     os.remove(temp_preview)
     

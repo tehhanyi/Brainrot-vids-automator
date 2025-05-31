@@ -107,7 +107,7 @@ def generate_thumbnail(video_file, output_file, timestamp="00:00",part_number=1,
         '-frames:v', '1',  # Capture a single frame
         '-vf', (
             'crop=480:640:(in_w-480)/2:(in_h-640)/2,'  # Crop to 4:3 portrait
-            'drawtext=text=\'{}\':'
+            'drawtext=text=\'{}\':text_shaping=1:text_align=center:'
             f'fontfile={FONT_FILE}:'
             'fontcolor=white:fontsize=40:'
             'borderw=2:bordercolor=black:'
@@ -116,7 +116,7 @@ def generate_thumbnail(video_file, output_file, timestamp="00:00",part_number=1,
             f'fontfile={FONT_FILE}:'
             'fontcolor=white:fontsize=80:'
             'borderw=3:bordercolor=black:'
-            'x=(w-text_w)/2:y=h-200'.format(wrapped_title, part_number)
+            'x=(w-text_w)/2:y=h-100'.format(wrapped_title, part_number)
         ),
         '-q:v', '2',  # Set high-quality output
         os.path.join(output_file, f'part_{part_number}.jpg')
@@ -129,13 +129,13 @@ def add_captions_to_video(input_file, output_file, total_clips, part_number=1, t
     filter_chain = (
         'split[original][blur];'
         '[blur]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:20[bg];'
-        '[original]scale=1080:-2[fg];'
+        '[original]scale=1080:1080:force_original_aspect_ratio=increase[fg];' # '[original]scale=1080:-2[fg];'
         '[bg][fg]overlay=(W-w)/2:(H-h)/2:format=auto,'
-        f'drawtext=text=\'{wrapped_title}\':'
+        f'drawtext=text=\'{wrapped_title}\':text_shaping=1:text_align=center:'
         f'fontfile={FONT_FILE}:'
         'fontcolor=white:fontsize=56:'
         'borderw=2:bordercolor=black:'
-        'x=(w-text_w)/2:y=400'
+        'x=(w-text_w)/2:y=500'
     )
     # Add part number only if there's more than one clip
     if total_clips > 1:

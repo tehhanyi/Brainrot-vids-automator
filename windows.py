@@ -168,6 +168,7 @@ def create_preview():
     ], check=True)
 
     add_captions_to_video(temp_preview, PREVIEW_FILE, total_clips=2, title="Preview Title Preview Title Preview Title", part_number=1)
+    generate_thumbnail(temp_preview, PREVIEW_FILE, title="Preview Title Preview Title Preview Title")
     print(f"\nPreview generated at: {PREVIEW_FILE}")
     os.remove(temp_preview)
     
@@ -179,6 +180,8 @@ def create_preview():
     
     if response == 'n':
         print("Processing cancelled.")
+        shutil.rmtree(TEMP_FOLDER)
+        shutil.rmtree(PREVIEW_FILE)
         sys.exit(0)
     
     shutil.rmtree(PREVIEW_FILE)

@@ -116,7 +116,7 @@ def generate_thumbnail(video_file, output_file, timestamp="00:00",part_number=1,
             f'fontfile={FONT_FILE}:'
             'fontcolor=white:fontsize=80:'
             'borderw=3:bordercolor=black:'
-            'x=(w-text_w)/2:y=h-100'.format(wrapped_title, part_number)
+            'x=(w-text_w)/2:y=h-200'.format(wrapped_title, part_number)
         ),
         '-q:v', '2',  # Set high-quality output
         os.path.join(output_file, f'part_{part_number}.jpg')
@@ -135,7 +135,7 @@ def add_captions_to_video(input_file, output_file, total_clips, part_number=1, t
         f'fontfile={FONT_FILE}:'
         'fontcolor=white:fontsize=56:'
         'borderw=2:bordercolor=black:'
-        'x=(w-text_w)/2:y=500'
+        'x=(w-text_w)/2:y=250'
     )
     # Add part number only if there's more than one clip
     if total_clips > 1:

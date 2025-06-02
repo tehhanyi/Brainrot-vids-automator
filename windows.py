@@ -4,10 +4,11 @@ import sys
 import urllib.request
 import zipfile
 import shutil
+import json
 
 FONT_FILE = './MinecraftBold.otf'
 SOURCE_FILE = 'vids/source_video.mp4'
-TEMP_FOLDER = 'vids/temp_clips'
+TEMP_FOLDER = 'vids/temp'
 PREVIEW_FILE = 'vids/preview'
 THUMBNAIL_FOLDER = 'vids/thumbnails'
 CLIPS_FOLDER = 'vids/tiktok_clips'
@@ -48,10 +49,23 @@ def retrieve_video_details():
     try:
         with open('video_details.txt', 'r') as f:
             lines = f.read().splitlines()
-            if len(lines) >= 3:
-                return lines
-            else:
-                raise ValueError("video_details.txt must contain 3 lines: URL, title, and duration")
+            # Default values for cut times
+            ads_start = None
+            ads_end = None
+            
+            if len(lines) < 3:
+                raise ValueError("video_details.txt must contain at least 3 lines: URL, title, and duration")
+                
+            # If fourth line exists and contains cut times
+            if len(lines) >= 4 and lines[3].strip():
+                cut_times = lines[3].strip().split()
+                if len(cut_times) == 2:
+                    ads_start, ads_end = cut_times
+                else:
+                    raise ValueError("If provided, cut times must be in the format: start end (e.g., 00:00:10 00:00:20)")
+
+            return lines[0], lines[1], int(lines[2]), ads_start, ads_end
+            
     except FileNotFoundError:
         print("Error: video_details.txt not found!")
         sys.exit(1)
@@ -59,6 +73,33 @@ def retrieve_video_details():
         print(f"Error: {e}")
         sys.exit(1)
 def download_video(url, filename):
+    try:
+        result = subprocess.run([
+            sys.executable, '-m', 'yt_dlp',
+            '--skip-download',  # Don't download, just check metadata
+            '--dump-json',      # Get video info as JSON
+            url
+        ], capture_output=True, text=True, check=True)
+        
+        video_info = json.loads(result.stdout)
+        # Check for content ID matches
+        if video_info.get('content_id_claims'):
+            print("\nWARNING: Copyright claims detected!")
+            print("The following content matches were found:")
+            for claim in video_info['content_id_claims']:
+                print(f"- {claim.get('claim', 'Unknown claim')}")    
+            while True:
+                response = input("\nDo you want to continue downloading? Tiktok may potential mute your videos (y/n): ").lower()
+                if response in ['y', 'n']:
+                    if response == 'n':
+                        sys.exit(0)
+                    break
+                print("Please enter 'y' for yes or 'n' for no.")
+        else:
+            print("No copyright claims detected. Proceeding with download...")
+    except subprocess.CalledProcessError:
+        print("Warning: Could not check for copyright claims. Proceeding with download...")
+
     if os.path.exists(filename):
         print("Video already downloaded.")
         return
@@ -67,6 +108,10 @@ def download_video(url, filename):
         sys.executable, '-m', 'yt_dlp',
         '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]',
         '--merge-output-format', 'mp4',
+        '--write-auto-sub',  # Download auto-generated subtitles
+        '--write-sub',       # Download manual subtitles if available
+        '--sub-format', 'vtt',  # Get subtitles in WebVTT format
+        '--embed-subs',      # Embed subtitles in the video file
         '-o', filename, url
     ], check=True)
     # subprocess.run([
@@ -75,6 +120,51 @@ def download_video(url, filename):
     #     '--postprocessor-args', 'ffmpeg:-c:v libx264 -c:a aac',  # Use compatible codecs
     #     '-o', filename, url
     # ], check=True)
+def remove_ads(filename, cut_start, cut_end):
+    os.makedirs(TEMP_FOLDER, exist_ok=True)
+    # Get the first part before the cut
+    subprocess.run([
+        ffmpeg_path, '-ss', '00:00:00',  # Start from the beginning
+        '-i', filename,
+        '-to', cut_start,  # Cut until the specified start time
+        '-map', '0',  # Include all streams (video, audio, subtitles)
+        '-c:v', 'libx264',  # Re-encode video
+        '-c:a', 'aac',      # Re-encode audio
+        '-c:s', 'mov_text', # Re-encode subtitles
+        '-preset', 'medium',
+        '-y', f'{TEMP_FOLDER}/first.mp4'
+    ], check=True)
+    
+    # Get the second part after the cut
+    subprocess.run([
+        ffmpeg_path, '-ss', cut_end,  # Start from the specified end time
+        '-i', filename,
+        '-map', '0',  # Include all streams (video, audio, subtitles)
+        '-c:v', 'libx264',
+        '-c:a', 'aac',
+        '-c:s', 'mov_text',
+        '-preset', 'medium',
+        '-y', f'{TEMP_FOLDER}/second.mp4'
+    ], check=True)
+    
+    # Create a file list for concatenation
+    with open(f'{TEMP_FOLDER}/list.txt', 'w') as f:
+        f.write("file 'first.mp4'\n")
+        f.write("file 'second.mp4'\n")
+    
+    # Concatenate the parts
+    subprocess.run([
+        ffmpeg_path, '-f', 'concat',
+        '-safe', '0',
+        '-i', f'{TEMP_FOLDER}/list.txt',
+        '-c:v', 'libx264',
+        '-c:a', 'aac',
+        '-c:s', 'mov_text',
+        '-preset', 'medium',
+        '-y', filename
+    ], check=True)
+
+    shutil.rmtree(TEMP_FOLDER)
 def split_video(filename, output_folder, segment_duration=60):
     os.makedirs(output_folder, exist_ok=True)
     subprocess.run([
@@ -157,10 +247,10 @@ def add_captions_to_video(input_file, output_file, total_clips, part_number=1, t
         os.path.join(output_file, f'part_{part_number}.mp4')
     ], check=True)
 def create_preview():
-    temp_preview = 'vids/0.mp4'   
+    temp_preview = f'{TEMP_FOLDER}/temp.mp4'   
     subprocess.run([
-        'ffmpeg', '-i', 'vids/temp_clips/clip_000.mp4',  # Use the first clip for preview
-        '-t', '1',  # Only take first second
+        'ffmpeg', '-i', f'{TEMP_FOLDER}/clip_000.mp4',  # Use the first clip for preview
+        '-t', '3',  # Only take first second
         '-c:v', 'libx264',
         '-preset', 'ultrafast',  # Fast encoding for preview
         '-y',
@@ -170,39 +260,33 @@ def create_preview():
     add_captions_to_video(temp_preview, PREVIEW_FILE, total_clips=2, title="Preview Title Preview Title Preview Title", part_number=1)
     generate_thumbnail(temp_preview, PREVIEW_FILE, title="Preview Title Preview Title Preview Title")
     print(f"\nPreview generated at: {PREVIEW_FILE}")
-    os.remove(temp_preview)
-    
+    os.startfile(os.path.realpath(PREVIEW_FILE))
+
     while True:
         response = input("\nDo you want to continue processing? (y/n): ").lower()
         if response in ['y', 'n']:
+            # shutil.rmtree(TEMP_FOLDER)
+            shutil.rmtree(PREVIEW_FILE)
             break
         print("Please en-+ter 'y' for yes or 'n' for no.")
-    
     if response == 'n':
         print("Processing cancelled.")
-        shutil.rmtree(TEMP_FOLDER)
-        shutil.rmtree(PREVIEW_FILE)
         sys.exit(0)
-    
-    shutil.rmtree(PREVIEW_FILE)
     print("\nContinuing with full video processing...")
     
 if __name__ == '__main__':
     # youtube_url = input("Enter the YouTube URL: ")
     # title = input("Enter the title for the thumbnails: ")
     # duration = input("Enter the duration per clip in secs: ")
-    lines = retrieve_video_details()
-    youtube_url = lines[0].strip()
-    title = lines[1].strip()
-    duration = int(lines[2].strip())
-
+    youtube_url, title, duration, ads_start, ads_end = retrieve_video_details()
     download_video(youtube_url, SOURCE_FILE)
+    if ads_start and ads_end:
+        print("\nRemoving ads from the video...")
+        remove_ads(SOURCE_FILE, ads_start, ads_end)
+    
     split_video(SOURCE_FILE, TEMP_FOLDER, segment_duration=duration)
-        
-    print("\nAll clips are splited in the", TEMP_FOLDER, "folder.")
-    print("\nAdding captions and generating thumbnails next...\n")
+    print("\nAll clips are splited in the", TEMP_FOLDER, "folder.\nAdding captions and generating thumbnails next...")
     create_preview()
-
     clip_files = sorted([f for f in os.listdir(TEMP_FOLDER) if f.endswith('.mp4')])
     total_clips = len(clip_files)
 
@@ -217,5 +301,6 @@ if __name__ == '__main__':
     # response = input("Do you want to delete the clips? (y/n): ").lower()
     # if response == 'y':
     shutil.rmtree(TEMP_FOLDER)
+    sys.exit(1)
     # else:
     #     print("Temporary clips are kept in:", TEMP_FOLDER)

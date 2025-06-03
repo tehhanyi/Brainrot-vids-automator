@@ -5,6 +5,7 @@ import urllib.request
 import zipfile
 import shutil
 import json
+import platform
 
 FONT_FILE = './MinecraftBold.otf'
 SOURCE_FILE = 'vids/source_video.mp4'
@@ -14,36 +15,42 @@ THUMBNAIL_FOLDER = 'vids/thumbnails'
 CLIPS_FOLDER = 'vids/tiktok_clips'
 
 def setup_ffmpeg():
-    ffmpeg_path = os.path.join(os.path.dirname(__file__), 'ffmpeg.exe')
-    
-    # Check if ffmpeg already exists
-    if os.path.exists(ffmpeg_path):
-        return ffmpeg_path
+    system = platform.system()
+
+    if system == "Windows":
+        ffmpeg_path = os.path.join(os.path.dirname(__file__), 'ffmpeg.exe')
+        # Check if ffmpeg already exists
+        if os.path.exists(ffmpeg_path):
+            return ffmpeg_path
+            
+        print("Downloading FFmpeg...")
+        # Download FFmpeg
+        ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+        zip_path = os.path.join(os.path.dirname(__file__), 'ffmpeg.zip')
         
-    print("Downloading FFmpeg...")
-    # Download FFmpeg
-    ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
-    zip_path = os.path.join(os.path.dirname(__file__), 'ffmpeg.zip')
-    
-    # Download the zip file
-    urllib.request.urlretrieve(ffmpeg_url, zip_path)
-    
-    # Extract ffmpeg.exe
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        for file in zip_ref.namelist():
-            if file.endswith('ffmpeg.exe'):
-                zip_ref.extract(file)
-                # Move ffmpeg.exe to root directory
-                shutil.move(file, ffmpeg_path)
-                break
-    
-    # Clean up
-    os.remove(zip_path)
-    if os.path.exists('ffmpeg-master-latest-win64-gpl'):
-        shutil.rmtree('ffmpeg-master-latest-win64-gpl')
+        # Download the zip file
+        urllib.request.urlretrieve(ffmpeg_url, zip_path)
         
-    print("FFmpeg setup complete!")
+        # Extract ffmpeg.exe
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            for file in zip_ref.namelist():
+                if file.endswith('ffmpeg.exe'):
+                    zip_ref.extract(file)
+                    # Move ffmpeg.exe to root directory
+                    shutil.move(file, ffmpeg_path)
+                    break
+        
+        # Clean up
+        os.remove(zip_path)
+        if os.path.exists('ffmpeg-master-latest-win64-gpl'):
+            shutil.rmtree('ffmpeg-master-latest-win64-gpl')
+    elif system == "Darwin":
+        ffmpeg_path = 'ffmpeg'
+    else:
+        print("This computer is running Linux or another Unix-like OS.")
+
     return ffmpeg_path
+
 ffmpeg_path = setup_ffmpeg()
 def retrieve_video_details():
     try:

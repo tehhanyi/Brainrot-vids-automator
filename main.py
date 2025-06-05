@@ -9,7 +9,7 @@ import platform
 
 required_libs = ["yt-dlp", "python-dotenv"]
 for package in required_libs:
-    subprocess.check_call([sys.executable, "-m", "pip3", "install", package])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 from dotenv import load_dotenv
 
@@ -225,7 +225,7 @@ def generate_thumbnail(video_file, output_file, timestamp="00:00",part_number=1,
     ], check=True)
 def add_captions_to_video(input_file, output_file, total_clips, part_number=1, title=""):
     os.makedirs(output_file, exist_ok=True)
-    wrapped_title = wrap_title(title, max_line=3, max_line_length=30)
+    wrapped_title = wrap_title(title, max_line=3, max_line_length=25)
     
     # Base filter chain
     filter_chain = (

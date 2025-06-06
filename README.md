@@ -4,28 +4,22 @@ Automatically process YouTube videos into TikTok-style vertical clips with capti
 
 ## Prerequisites
 - Python 3.x
-- FFmpeg
-- yt-dlp
+- FFmpeg (v7.1.1)
 
 ## Installation
-1. Install Python dependencies:
-```bash
-pip install yt-dlp
-```
-or
-```bash
-pip3 install yt-dlp
-```
-
-2. Download and install FFmpeg:
+1. Download Python[https://www.python.org/downloads/]
+2. Install FFmpeg:
    - Windows: The script will automatically download FFmpeg
    - MacOS: `brew install ffmpeg`
 
 ## Usage
-1. Create a `video_details.txt` file with the following format:
-- Line 1: YouTube URL
-- Line 2: Title for the clips
-- Line 3: Duration per clip in seconds
+1. Rename `.env-example` file to `.env` and add on the following details:
+- YouTube URL
+- Title for the clips
+- Duration per clip in seconds
+- (Optional) Sponsor shoutout start time
+- (Optional) Sponsor shoutout end time
+
 ```example
 https://www.youtube.com/watch?v=YOUR_VIDEO_ID
 Your Video Title
@@ -34,7 +28,7 @@ Your Video Title
 
 2. Run the script:
 ```bash
-python windows.py
+python main.py
 ```
 
 ## Output
@@ -44,7 +38,8 @@ The script will:
 - Split it into clips of specified duration
 - Add captions and blur effects
 - Generate thumbnails
-- Save everything in the `vids` folder
+- Burn subtitles onto clips
+- Save everything in the `vids/` folder
 
 ## Folder Structure
 
@@ -53,6 +48,6 @@ The script will:
 │   ├── source_video.mp4
 │   ├── temp_clips/
 │   └── tiktok_clips/
-├── video_details.txt
-└── windows.py
+├── .env
+└── main.py
 ```

@@ -4,7 +4,7 @@ Automatically process YouTube videos into TikTok-style vertical clips with capti
 
 ## Prerequisites
 - Python 3.x
-- FFmpeg
+- FFmpeg (v7.1.1)
 
 ## Installation
 1. Download Python[https://www.python.org/downloads/]

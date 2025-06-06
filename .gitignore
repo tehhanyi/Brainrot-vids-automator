@@ -2,3 +2,4 @@ vids/source_video.mp4
 vids/
 ffmpeg.exe
 .env
+.DS_Store

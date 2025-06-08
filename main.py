@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 FONT_FILE = './MinecraftBold.otf'
 SOURCE_FILE = 'vids/source_video.mp4'
 TEMP_FOLDER = 'vids/temp'
-PREVIEW_FILE = 'vids/preview'
+PREVIEW_FOLDER = 'vids/preview'
 THUMBNAIL_FOLDER = 'vids/thumbnails'
 CLIPS_FOLDER = 'vids/tiktok_clips'
 
@@ -259,7 +259,8 @@ def add_captions_to_video(input_file, output_file, total_clips, part_number=1, t
         os.path.join(output_file, f'part_{part_number}.mp4')
     ], check=True)
 def create_preview():
-    temp_preview = f'{TEMP_FOLDER}/temp.mp4'   
+    temp_preview = f'{PREVIEW_FOLDER}/temp.mp4'   
+    os.makedirs(PREVIEW_FOLDER, exist_ok=True)
     subprocess.run([
         'ffmpeg', '-i', f'{TEMP_FOLDER}/clip_000.mp4',  # Use the first clip for preview
         '-t', '3',  # Only take first second
@@ -269,16 +270,16 @@ def create_preview():
         temp_preview
     ], check=True)
 
-    add_captions_to_video(temp_preview, PREVIEW_FILE, total_clips=2, title="Preview Title Preview Title Preview Title", part_number=1)
-    generate_thumbnail(temp_preview, PREVIEW_FILE, title="Preview Title Preview Title Preview Title")
-    print(f"\nPreview generated at: {PREVIEW_FILE}")
-    os.startfile(os.path.realpath(PREVIEW_FILE))
+    add_captions_to_video(temp_preview, PREVIEW_FOLDER, total_clips=2, title="Preview Title Preview Title Preview Title", part_number=1)
+    generate_thumbnail(temp_preview, PREVIEW_FOLDER, title="Preview Title Preview Title Preview Title")
+    print(f"\nPreview generated at: {PREVIEW_FOLDER}")
+    os.startfile(os.path.realpath(PREVIEW_FOLDER))
 
     while True:
         response = input("\nDo you want to continue processing? (y/n): ").lower()
         if response in ['y', 'n']:
             # shutil.rmtree(TEMP_FOLDER)
-            shutil.rmtree(PREVIEW_FILE)
+            shutil.rmtree(PREVIEW_FOLDER)
             break
         print("Please en-+ter 'y' for yes or 'n' for no.")
     if response == 'n':

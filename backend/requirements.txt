@@ -1,0 +1,4 @@
+fastapi
+uvicorn[standard]
+yt-dlp>=2024.11.18
+python-multipart

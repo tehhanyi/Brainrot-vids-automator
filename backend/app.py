@@ -21,7 +21,7 @@ from pydantic import BaseModel
 
 # ── pip install fastapi uvicorn yt-dlp python-multipart ──────────────────────
 subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"], 
-               capture_output=True)import sys
+               capture_output=True)
                
 app = FastAPI(title="Brainrot Vids API")
 

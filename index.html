@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Brainrot Vids Automator</title>
+<style>
+  /* ── MINECRAFT PIXEL FONT (Google Fonts fallback) ── */
+  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+  :root {
+    --green:   #5aff5a;
+    --green2:  #3bc93b;
+    --dark:    #0d0d0d;
+    --panel:   #1a1a1a;
+    --border:  #3bc93b;
+    --text:    #d4d4d4;
+    --yellow:  #ffee55;
+    --red:     #ff4d4d;
+    --shadow:  4px 4px 0 #000;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px 80px;
+
+    /* scanline overlay */
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.25) 2px,
+        rgba(0,0,0,0.25) 4px
+      );
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    font-size: clamp(36px, 8vw, 72px);
+    color: var(--green);
+    text-shadow: 4px 4px 0 #007700, 8px 8px 0 #003300;
+    letter-spacing: 2px;
+    line-height: 1;
+    animation: flicker 6s infinite;
+  }
+
+  .tagline {
+    color: var(--yellow);
+    font-size: 22px;
+    margin-top: 8px;
+    text-shadow: 2px 2px 0 #000;
+  }
+
+  @keyframes flicker {
+    0%,95%,100% { opacity: 1; }
+    96%          { opacity: 0.7; }
+    97%          { opacity: 1; }
+    98%          { opacity: 0.5; }
+    99%          { opacity: 1; }
+  }
+
+  /* ── PANEL ── */
+  .panel {
+    width: 100%;
+    max-width: 640px;
+    background: var(--panel);
+    border: 3px solid var(--border);
+    box-shadow: var(--shadow), inset 0 0 60px rgba(0,80,0,0.08);
+    padding: 32px 28px;
+    position: relative;
+  }
+
+  /* pixel corners */
+  .panel::before, .panel::after {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    background: var(--dark);
+    border: 3px solid var(--border);
+  }
+  .panel::before { top: -3px; left: -3px; border-right: none; border-bottom: none; }
+  .panel::after  { bottom: -3px; right: -3px; border-left: none; border-top: none; }
+
+  /* ── FORM ── */
+  .field { margin-bottom: 20px; }
+
+  label {
+    display: block;
+    color: var(--green);
+    font-size: 18px;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+
+  .hint { font-size: 15px; color: #888; margin-bottom: 6px; display: block; }
+
+  input[type=text], input[type=number], input[type=url] {
+    width: 100%;
+    background: #111;
+    border: 2px solid #333;
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color .15s;
+  }
+
+  input:focus { border-color: var(--green); }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* ── BUTTON ── */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: var(--green2);
+    color: #000;
+    font-family: 'VT323', monospace;
+    font-size: 26px;
+    letter-spacing: 2px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #1a5c1a, 4px 4px 0 #000;
+    transition: transform .08s, box-shadow .08s;
+    margin-top: 8px;
+  }
+
+  .btn:hover { background: var(--green); }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #1a5c1a, 2px 2px 0 #000; }
+  .btn:disabled { background: #333; color: #666; cursor: not-allowed; box-shadow: 0 6px 0 #111, 4px 4px 0 #000; }
+
+  /* ── STATUS BOX ── */
+  #status-box {
+    display: none;
+    margin-top: 28px;
+    border: 2px solid #333;
+    padding: 20px;
+    background: #0d0d0d;
+  }
+
+  #status-box.visible { display: block; }
+
+  .status-label {
+    color: var(--green);
+    font-size: 16px;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+
+  #progress-text {
+    font-size: 22px;
+    color: var(--yellow);
+    min-height: 1.4em;
+  }
+
+  /* progress bar */
+  .bar-wrap {
+    margin-top: 14px;
+    height: 16px;
+    background: #222;
+    border: 2px solid #333;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    width: 0%;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--green2) 0px, var(--green2) 14px,
+      #2a8a2a 14px, #2a8a2a 28px
+    );
+    background-size: 28px 100%;
+    transition: width .4s;
+    animation: march .5s linear infinite;
+  }
+
+  @keyframes march {
+    from { background-position: 0 0; }
+    to   { background-position: 28px 0; }
+  }
+
+  /* done / fail */
+  #download-btn {
+    display: none;
+    margin-top: 20px;
+    background: var(--yellow);
+    color: #000;
+    box-shadow: 0 6px 0 #886600, 4px 4px 0 #000;
+  }
+
+  #download-btn:hover { background: #ffe033; }
+
+  #error-msg {
+    display: none;
+    color: var(--red);
+    font-size: 18px;
+    margin-top: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 2px solid #2a2a2a;
+    margin: 24px 0;
+  }
+
+  .section-title {
+    color: #555;
+    font-size: 17px;
+    letter-spacing: 3px;
+    margin-bottom: 14px;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 32px;
+    font-size: 16px;
+    color: #444;
+    text-align: center;
+  }
+
+  footer a { color: var(--green2); text-decoration: none; }
+  footer a:hover { color: var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⬛ BRAINROT VIDS</div>
+  <div class="tagline">AUTO-CLIPPER &amp; THUMBNAIL GENERATOR</div>
+</header>
+
+<div class="panel">
+
+  <!-- REQUIRED -->
+  <div class="field">
+    <label>[ YOUTUBE URL ]</label>
+    <input id="yt-url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+  </div>
+
+  <div class="field">
+    <label>[ VIDEO TITLE ]</label>
+    <span class="hint">Shown as overlay text on every clip</span>
+    <input id="title" type="text" placeholder="e.g. Insane Minecraft Parkour" />
+  </div>
+
+  <div class="field">
+    <label>[ CLIP DURATION (seconds) ]</label>
+    <input id="duration" type="number" value="60" min="15" max="600" />
+  </div>
+
+  <hr class="divider" />
+
+  <!-- OPTIONAL -->
+  <div class="section-title">// SPONSOR SKIP (optional)</div>
+
+  <div class="row">
+    <div class="field">
+      <label>[ START TIME ]</label>
+      <input id="sponsor-start" type="text" placeholder="00:02:10" />
+    </div>
+    <div class="field">
+      <label>[ END TIME ]</label>
+      <input id="sponsor-end" type="text" placeholder="00:04:30" />
+    </div>
+  </div>
+
+  <button class="btn" id="generate-btn" onclick="startJob()">▶ GENERATE CLIPS</button>
+
+  <!-- STATUS -->
+  <div id="status-box">
+    <div class="status-label">// PROCESSING</div>
+    <div id="progress-text">Starting…</div>
+    <div class="bar-wrap"><div class="bar-fill" id="bar"></div></div>
+    <div id="error-msg"></div>
+    <button class="btn" id="download-btn" onclick="downloadClips()">⬇ DOWNLOAD CLIPS.ZIP</button>
+  </div>
+
+</div>
+
+<footer>
+  Built by <a href="https://tehhanyi.github.io" target="_blank">Han Yi</a> &nbsp;·&nbsp;
+  <a href="https://github.com/tehhanyi/Brainrot-vids-automator" target="_blank">Source</a>
+</footer>
+
+<script>
+  // ── CONFIG ────────────────────────────────────────────────────────────────
+  // Replace with your Render/Railway URL after deploying the backend
+  const API_BASE = 'https://YOUR_BACKEND.onrender.com';
+
+  let pollTimer = null;
+  let currentJobId = null;
+  let downloadUrl = null;
+
+  // ── PROGRESS STAGES ───────────────────────────────────────────────────────
+  const STAGES = {
+    queued:      { pct: 5,   label: 'Queued…' },
+    downloading: { pct: 25,  label: 'Downloading video…' },
+    processing:  { pct: 60,  label: 'Processing clips…' },
+    done:        { pct: 100, label: 'Done! Ready to download.' },
+    failed:      { pct: 0,   label: 'Error.' },
+  };
+
+  function setBar(pct) {
+    document.getElementById('bar').style.width = pct + '%';
+  }
+
+  function setProgress(text) {
+    document.getElementById('progress-text').textContent = text;
+  }
+
+  // ── START JOB ─────────────────────────────────────────────────────────────
+  async function startJob() {
+    const url      = document.getElementById('yt-url').value.trim();
+    const title    = document.getElementById('title').value.trim();
+    const duration = parseInt(document.getElementById('duration').value, 10);
+    const spStart  = document.getElementById('sponsor-start').value.trim() || null;
+    const spEnd    = document.getElementById('sponsor-end').value.trim() || null;
+
+    if (!url || !title || !duration) {
+      alert('Please fill in YouTube URL, title, and clip duration.');
+      return;
+    }
+
+    // Reset UI
+    document.getElementById('generate-btn').disabled = true;
+    document.getElementById('status-box').classList.add('visible');
+    document.getElementById('download-btn').style.display = 'none';
+    document.getElementById('error-msg').style.display = 'none';
+    setProgress('Contacting server…');
+    setBar(3);
+
+    try {
+      const res = await fetch(`${API_BASE}/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          youtube_url:    url,
+          video_title:    title,
+          clip_duration:  duration,
+          sponsor_start:  spStart,
+          sponsor_end:    spEnd,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      const { job_id } = await res.json();
+      currentJobId = job_id;
+      pollStatus();
+
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  // ── POLL ──────────────────────────────────────────────────────────────────
+  function pollStatus() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/status/${currentJobId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const stage = STAGES[data.status] || { pct: 50 };
+        setBar(stage.pct);
+        // Show fine-grained progress from backend if available
+        setProgress(data.progress || stage.label);
+
+        if (data.status === 'done') {
+          clearInterval(pollTimer);
+          downloadUrl = `${API_BASE}${data.download_url}`;
+          document.getElementById('download-btn').style.display = 'block';
+          document.getElementById('generate-btn').disabled = false;
+        }
+
+        if (data.status === 'failed') {
+          clearInterval(pollTimer);
+          showError(data.error || 'Unknown error occurred.');
+          document.getElementById('generate-btn').disabled = false;
+        }
+
+      } catch (e) {
+        // Network hiccup — keep polling
+      }
+    }, 2500);
+  }
+
+  // ── DOWNLOAD ──────────────────────────────────────────────────────────────
+  function downloadClips() {
+    if (downloadUrl) window.open(downloadUrl, '_blank');
+  }
+
+  // ── ERROR ─────────────────────────────────────────────────────────────────
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = '⚠ ' + msg;
+    el.style.display = 'block';
+    setProgress('Failed.');
+    setBar(0);
+  }
+</script>
+</body>
+</html>

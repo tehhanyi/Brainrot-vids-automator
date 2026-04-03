@@ -5,8 +5,7 @@ Requires: ffmpeg installed on the server, MinecraftBold.otf in the same director
 """
 
 import os
-import subprocess
-import sys
+import subprocess, sys
 import shutil
 import json
 import threading
@@ -21,7 +20,9 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 # ── pip install fastapi uvicorn yt-dlp python-multipart ──────────────────────
-
+subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"], 
+               capture_output=True)import sys
+               
 app = FastAPI(title="Brainrot Vids API")
 
 # Allow your GitHub Pages origin (update after deploying frontend)

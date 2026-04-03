@@ -4,16 +4,17 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Brainrot Vids Automator</title>
+<link rel="icon" type="image/png" href="https://static.wikia.nocookie.net/minecraft/images/5/56/Bee.png/revision/latest/scale-to-width-down/250?cb=20201208205518" />
 <style>
   /* ── MINECRAFT PIXEL FONT (Google Fonts fallback) ── */
   @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
   :root {
-    --green:   #5aff5a;
-    --green2:  #3bc93b;
+    --green:   #8ebf45;
+    --green2:  #5e8c31;
     --dark:    #0d0d0d;
     --panel:   #1a1a1a;
-    --border:  #3bc93b;
+    --border:  #6f9f3a;
     --text:    #d4d4d4;
     --yellow:  #ffee55;
     --red:     #ff4d4d;
@@ -23,7 +24,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: var(--dark);
+    background-color: var(--dark);
     color: var(--text);
     font-family: 'VT323', monospace;
     font-size: 20px;
@@ -33,8 +34,13 @@
     align-items: center;
     padding: 40px 16px 80px;
 
-    /* scanline overlay */
+    /* darken image for readability + preserve scanline overlay */
     background-image:
+      linear-gradient(
+        rgba(8, 12, 8, 0.65),
+        rgba(8, 12, 8, 0.65)
+      ),
+      url('https://i.pinimg.com/736x/c3/cd/00/c3cd00a925e2514c8934e58ca570d046.jpg'),
       repeating-linear-gradient(
         0deg,
         transparent,
@@ -42,6 +48,10 @@
         rgba(0,0,0,0.25) 2px,
         rgba(0,0,0,0.25) 4px
       );
+    background-size: auto, cover, auto;
+    background-position: center center;
+    background-repeat: repeat, no-repeat, repeat;
+    background-attachment: scroll, fixed, scroll;
   }
 
   /* ── HEADER ── */
@@ -57,6 +67,13 @@
     letter-spacing: 2px;
     line-height: 1;
     animation: flicker 6s infinite;
+  }
+
+  .logo-mark {
+    height: 0.9em;
+    width: auto;
+    vertical-align: -0.12em;
+    margin-right: 0.2em;
   }
 
   .tagline {
@@ -247,7 +264,7 @@
 <body>
 
 <header>
-  <div class="logo">⬛ BRAINROT VIDS</div>
+  <div class="logo"><img class="logo-mark" src="https://static.wikia.nocookie.net/neopedia/images/3/32/Minecraft_logo.svg/revision/latest/scale-to-width-down/866?cb=20240918204056&amp;path-prefix=es" alt="Minecraft" /> BRAINROT VIDS</div>
   <div class="tagline">AUTO-CLIPPER &amp; THUMBNAIL GENERATOR</div>
 </header>
 
